@@ -274,8 +274,9 @@ class CascadeROIHeadsDev(StandardROIHeads):
         # but scale down the gradients on features.
         if self.training:
             box_features = _ScaleGradient.apply(box_features, 1.0 / self.num_cascade_stages)
-        box_features = self.box_head[stage](box_features)
-        return self.box_predictor[stage](box_features), box_features
+        box_features_processed = self.box_head[stage](box_features)
+
+        return self.box_predictor[stage](box_features_processed), box_features
 
     def _create_proposals_from_boxes(self, boxes, image_sizes):
         """
