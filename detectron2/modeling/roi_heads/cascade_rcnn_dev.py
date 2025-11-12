@@ -29,7 +29,7 @@ class _ScaleGradient(Function):
 
 
 @ROI_HEADS_REGISTRY.register()
-class CascadeROIHeads(StandardROIHeads):
+class CascadeROIHeadsDev(StandardROIHeads):
     """
     The ROI heads that implement :paper:`Cascade R-CNN`.
     """
