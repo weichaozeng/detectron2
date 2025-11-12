@@ -146,9 +146,9 @@ class CascadeROIHeadsDev(StandardROIHeads):
             losses.update(self._forward_keypoint(features, proposals))
             return proposals, losses
         else:
-            pred_instances = self._forward_box(features, proposals)
+            pred_instances, final_roi_features = self._forward_box(features, proposals)
             pred_instances = self.forward_with_given_boxes(features, pred_instances)
-            return pred_instances, {}
+            return pred_instances, {}, final_roi_features
 
     def _forward_box(self, features, proposals, targets=None):
         """
