@@ -219,7 +219,7 @@ class GeneralizedRCNNDev(nn.Module):
 
         if do_postprocess:
             assert not torch.jit.is_scripting(), "Scripting is not supported for postprocess."
-            return GeneralizedRCNNDev._postprocess(results, batched_inputs, images.image_sizes)
+            return GeneralizedRCNNDev._postprocess(results, batched_inputs, images.image_sizes), final_roi_features
         return results, final_roi_features
 
     def preprocess_image(self, batched_inputs: List[Dict[str, torch.Tensor]]):
