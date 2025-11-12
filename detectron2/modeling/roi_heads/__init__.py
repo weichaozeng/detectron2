@@ -21,6 +21,7 @@ from .roi_heads import (
     select_foreground_proposals,
 )
 from .cascade_rcnn import CascadeROIHeads
+from .cascade_rcnn_dev import CascadeROIHeads as CascadeROIHeadsDev
 from .rotated_fast_rcnn import RROIHeads
 from .fast_rcnn import FastRCNNOutputLayers
 
