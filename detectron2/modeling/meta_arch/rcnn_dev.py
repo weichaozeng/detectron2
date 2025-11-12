@@ -18,7 +18,8 @@ from ..proposal_generator import build_proposal_generator
 from ..roi_heads import build_roi_heads
 from .build import META_ARCH_REGISTRY
 
-__all__ = ["GeneralizedRCNNDev", "ProposalNetwork"]
+# __all__ = ["GeneralizedRCNNDev", "ProposalNetwork"]
+__all__ = ["GeneralizedRCNNDev"]
 
 
 @META_ARCH_REGISTRY.register()
@@ -251,92 +252,92 @@ class GeneralizedRCNNDev(nn.Module):
         return processed_results
 
 
-@META_ARCH_REGISTRY.register()
-class ProposalNetwork(nn.Module):
-    """
-    A meta architecture that only predicts object proposals.
-    """
+# @META_ARCH_REGISTRY.register()
+# class ProposalNetwork(nn.Module):
+#     """
+#     A meta architecture that only predicts object proposals.
+#     """
 
-    @configurable
-    def __init__(
-        self,
-        *,
-        backbone: Backbone,
-        proposal_generator: nn.Module,
-        pixel_mean: Tuple[float],
-        pixel_std: Tuple[float],
-    ):
-        """
-        Args:
-            backbone: a backbone module, must follow detectron2's backbone interface
-            proposal_generator: a module that generates proposals using backbone features
-            pixel_mean, pixel_std: list or tuple with #channels element, representing
-                the per-channel mean and std to be used to normalize the input image
-        """
-        super().__init__()
-        self.backbone = backbone
-        self.proposal_generator = proposal_generator
-        self.register_buffer("pixel_mean", torch.tensor(pixel_mean).view(-1, 1, 1), False)
-        self.register_buffer("pixel_std", torch.tensor(pixel_std).view(-1, 1, 1), False)
+#     @configurable
+#     def __init__(
+#         self,
+#         *,
+#         backbone: Backbone,
+#         proposal_generator: nn.Module,
+#         pixel_mean: Tuple[float],
+#         pixel_std: Tuple[float],
+#     ):
+#         """
+#         Args:
+#             backbone: a backbone module, must follow detectron2's backbone interface
+#             proposal_generator: a module that generates proposals using backbone features
+#             pixel_mean, pixel_std: list or tuple with #channels element, representing
+#                 the per-channel mean and std to be used to normalize the input image
+#         """
+#         super().__init__()
+#         self.backbone = backbone
+#         self.proposal_generator = proposal_generator
+#         self.register_buffer("pixel_mean", torch.tensor(pixel_mean).view(-1, 1, 1), False)
+#         self.register_buffer("pixel_std", torch.tensor(pixel_std).view(-1, 1, 1), False)
 
-    @classmethod
-    def from_config(cls, cfg):
-        backbone = build_backbone(cfg)
-        return {
-            "backbone": backbone,
-            "proposal_generator": build_proposal_generator(cfg, backbone.output_shape()),
-            "pixel_mean": cfg.MODEL.PIXEL_MEAN,
-            "pixel_std": cfg.MODEL.PIXEL_STD,
-        }
+#     @classmethod
+#     def from_config(cls, cfg):
+#         backbone = build_backbone(cfg)
+#         return {
+#             "backbone": backbone,
+#             "proposal_generator": build_proposal_generator(cfg, backbone.output_shape()),
+#             "pixel_mean": cfg.MODEL.PIXEL_MEAN,
+#             "pixel_std": cfg.MODEL.PIXEL_STD,
+#         }
 
-    @property
-    def device(self):
-        return self.pixel_mean.device
+#     @property
+#     def device(self):
+#         return self.pixel_mean.device
 
-    def _move_to_current_device(self, x):
-        return move_device_like(x, self.pixel_mean)
+#     def _move_to_current_device(self, x):
+#         return move_device_like(x, self.pixel_mean)
 
-    def forward(self, batched_inputs):
-        """
-        Args:
-            Same as in :class:`GeneralizedRCNN.forward`
+#     def forward(self, batched_inputs):
+#         """
+#         Args:
+#             Same as in :class:`GeneralizedRCNN.forward`
 
-        Returns:
-            list[dict]:
-                Each dict is the output for one input image.
-                The dict contains one key "proposals" whose value is a
-                :class:`Instances` with keys "proposal_boxes" and "objectness_logits".
-        """
-        images = [self._move_to_current_device(x["image"]) for x in batched_inputs]
-        images = [(x - self.pixel_mean) / self.pixel_std for x in images]
-        images = ImageList.from_tensors(
-            images,
-            self.backbone.size_divisibility,
-            padding_constraints=self.backbone.padding_constraints,
-        )
-        features = self.backbone(images.tensor)
+#         Returns:
+#             list[dict]:
+#                 Each dict is the output for one input image.
+#                 The dict contains one key "proposals" whose value is a
+#                 :class:`Instances` with keys "proposal_boxes" and "objectness_logits".
+#         """
+#         images = [self._move_to_current_device(x["image"]) for x in batched_inputs]
+#         images = [(x - self.pixel_mean) / self.pixel_std for x in images]
+#         images = ImageList.from_tensors(
+#             images,
+#             self.backbone.size_divisibility,
+#             padding_constraints=self.backbone.padding_constraints,
+#         )
+#         features = self.backbone(images.tensor)
 
-        if "instances" in batched_inputs[0]:
-            gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
-        elif "targets" in batched_inputs[0]:
-            log_first_n(
-                logging.WARN, "'targets' in the model inputs is now renamed to 'instances'!", n=10
-            )
-            gt_instances = [x["targets"].to(self.device) for x in batched_inputs]
-        else:
-            gt_instances = None
-        proposals, proposal_losses = self.proposal_generator(images, features, gt_instances)
-        # In training, the proposals are not useful at all but we generate them anyway.
-        # This makes RPN-only models about 5% slower.
-        if self.training:
-            return proposal_losses
+#         if "instances" in batched_inputs[0]:
+#             gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
+#         elif "targets" in batched_inputs[0]:
+#             log_first_n(
+#                 logging.WARN, "'targets' in the model inputs is now renamed to 'instances'!", n=10
+#             )
+#             gt_instances = [x["targets"].to(self.device) for x in batched_inputs]
+#         else:
+#             gt_instances = None
+#         proposals, proposal_losses = self.proposal_generator(images, features, gt_instances)
+#         # In training, the proposals are not useful at all but we generate them anyway.
+#         # This makes RPN-only models about 5% slower.
+#         if self.training:
+#             return proposal_losses
 
-        processed_results = []
-        for results_per_image, input_per_image, image_size in zip(
-            proposals, batched_inputs, images.image_sizes
-        ):
-            height = input_per_image.get("height", image_size[0])
-            width = input_per_image.get("width", image_size[1])
-            r = detector_postprocess(results_per_image, height, width)
-            processed_results.append({"proposals": r})
-        return processed_results
+#         processed_results = []
+#         for results_per_image, input_per_image, image_size in zip(
+#             proposals, batched_inputs, images.image_sizes
+#         ):
+#             height = input_per_image.get("height", image_size[0])
+#             width = input_per_image.get("width", image_size[1])
+#             r = detector_postprocess(results_per_image, height, width)
+#             processed_results.append({"proposals": r})
+#         return processed_results
